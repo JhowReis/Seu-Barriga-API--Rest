@@ -1,15 +1,37 @@
 package tests;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import core.BaseTest;
 
 public class BarrigaTest extends BaseTest {
+	
+	private String TOKEN;
+	
+	@Before
+	public void login() {
+		Map<String, String> login = new HashMap<>();
+		login.put("email", "jonathan.linkedin2019@gmail.com");
+		login.put("senha", "jhowjhow2");
+		
+		TOKEN =
+				given()
+				
+				.body(login)
+				.when()
+				.post("/signin")
+				.then()
+				.statusCode(200)
+				.extract().path("token");
+		
+	}
 	
 	@Test
 	public void naoDeveAcessarAPISemToken() {
@@ -23,22 +45,8 @@ public class BarrigaTest extends BaseTest {
 	
 	@Test
 	public void deveIncluirContaComSucesso() {
-		Map<String, String> login = new HashMap<>();
-		login.put("email", "jonathan.linkedin2019@gmail.com");
-		login.put("senha", "jhowjhow2");
-		
-		String token =
 			given()
-				
-				.body(login)
-			.when()
-				.post("/signin")
-			.then()
-				.statusCode(200)
-				.extract().path("token");
-				
-			given()
-				.header("Authorization","JWT " + token)
+				.header("Authorization","JWT " + TOKEN)
 				.body("{\"nome\": \"conta adicionada via api\"}")
 			.when()
 				.post("/contas")
@@ -47,4 +55,20 @@ public class BarrigaTest extends BaseTest {
 				
 		;
 	}
+	@Test
+	public void deveAlterarContaComSucesso() {
+		given()
+		.header("Authorization","JWT " + TOKEN)
+		.body("{\"nome\": \"conta alterada via api\"}")
+		.when()
+		.put("/contas/1227698")
+		.then()
+		.log().all()
+		.statusCode(200)
+		.body("nome", is("conta alterada via api"))
+		.body("usuario_id", is(21441))
+		
+		;
+	}
+
 }
