@@ -57,16 +57,29 @@ public class BarrigaTest extends BaseTest {
 	}
 	@Test
 	public void deveAlterarContaComSucesso() {
+			given()
+				.header("Authorization","JWT " + TOKEN)
+				.body("{\"nome\": \"conta alterada via api\"}")
+			.when()
+				.put("/contas/1227698")
+			.then()
+				.statusCode(200)
+				.body("nome", is("conta alterada via api"))
+				.body("usuario_id", is(21441))
+			
+			;
+	}
+	
+	@Test
+	public void naoDeveIncluirContaComMesmoNome() {
 		given()
-		.header("Authorization","JWT " + TOKEN)
-		.body("{\"nome\": \"conta alterada via api\"}")
+			.header("Authorization","JWT " + TOKEN)
+			.body("{\"nome\": \"conta alterada via api\"}")
 		.when()
-		.put("/contas/1227698")
+			.post("/contas")
 		.then()
-		.log().all()
-		.statusCode(200)
-		.body("nome", is("conta alterada via api"))
-		.body("usuario_id", is(21441))
+			.statusCode(400)
+			.body("error", is("Já existe uma conta com esse nome!"))
 		
 		;
 	}
