@@ -143,20 +143,34 @@ public class BarrigaTest extends BaseTest {
 		;
 	}
 
-	@Test
-	public  void naoDeveRemoverContaComMovimentacao(){
-		given()
+    @Test
+    public  void naoDeveRemoverContaComMovimentacao(){
+        given()
             .header("Authorization","JWT " + TOKEN)
         .when()
             .delete("contas/1227698")
         .then()
-                .statusCode(500)
-                .body("constraint", is("transacoes_conta_id_foreign"))
+            .statusCode(500)
+            .body("constraint", is("transacoes_conta_id_foreign"))
 
         ;
 
-	}
-	private Movimentacao getMovimentacaoValida(){
+    }
+
+    @Test
+    public  void deveCalcularSaldoContas(){
+        given()
+            .header("Authorization","JWT " + TOKEN)
+        .when()
+            .get("/saldo")
+        .then()
+            .statusCode(200)
+            .body("find{it.conta_id == 1227698}.saldo", is("300.00"))
+
+        ;
+
+    }
+    private Movimentacao getMovimentacaoValida(){
 		Movimentacao mov = new Movimentacao();
 		mov.setConta_id(1227698);
 		mov.setDescricao("Descrição da movimentação");
@@ -168,6 +182,6 @@ public class BarrigaTest extends BaseTest {
 		mov.setStatus(true);
 		return  mov;
 	}
-	
+
 
 }
