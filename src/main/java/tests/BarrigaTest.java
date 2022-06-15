@@ -79,7 +79,7 @@ public class BarrigaTest extends BaseTest {
 			.post("/contas")
 		.then()
 			.statusCode(400)
-			.body("error", is("Já existe uma conta com esse nome!"))
+			.body("error", is("JÃ¡ existe uma conta com esse nome!"))
 		
 		;
 	}
@@ -87,15 +87,7 @@ public class BarrigaTest extends BaseTest {
 	
 	@Test
 	public void deveInserirMovimentacaoComSucesso() {
-		Movimentacao mov = new Movimentacao();
-		mov.setConta_id(1227698);
-		mov.setDescricao("Descrição da movimentação");
-		mov.setEnvolvido("Envolvido na movimentação");
-		mov.setTipo("REC");
-		mov.setData_transacao("01/02/2010");
-		mov.setData_pagamento("01/01/2019");
-		mov.setValor(100f);
-		mov.setStatus(true);
+		Movimentacao mov = getMovimentacaoValida();
 		
 		given()
 			.header("Authorization","JWT " + TOKEN)
@@ -120,18 +112,47 @@ public class BarrigaTest extends BaseTest {
 			.body("$", hasSize(8))
 			.body("msg", hasItems(
 					
-					"Data da Movimentação é obrigatório",
-					"Data do pagamento é obrigatório",
-					"Descrição é obrigatório",
-					"Interessado é obrigatório",
-					"Valor é obrigatório",
-					"Valor deve ser um número",
-					"Conta é obrigatório",
-					"Situação é obrigatório"
+					"Data da MovimentaÃ§Ã£o Ã© obrigatÃ³rio",
+					"Data do pagamento Ã© obrigatÃ³rio",
+					"DescriÃ§Ã£o Ã© obrigatÃ³rio",
+					"Interessado Ã© obrigatÃ³rio",
+					"Valor Ã© obrigatÃ³rio",
+					"Valor deve ser um nÃºmero",
+					"Conta Ã© obrigatÃ³rio",
+					"SituaÃ§Ã£o Ã© obrigatÃ³rio"
 
 					))
 		
 		;
+	}
+	@Test
+	public void naoDeveInserirMovimentacaoFutura() {
+		Movimentacao mov = getMovimentacaoValida();
+		mov.setData_transacao("17/06/2022");
+		given()
+			.header("Authorization","JWT " + TOKEN)
+			.body(mov)
+		.when()
+			.post("/transacoes")
+		.then()
+			.statusCode(400)
+			.body("$", hasSize(1))
+			.body("msg", hasItem("Data da MovimentaÃ§Ã£o deve ser menor ou igual Ã  data atual"))
+
+
+		;
+	}
+	private Movimentacao getMovimentacaoValida(){
+		Movimentacao mov = new Movimentacao();
+		mov.setConta_id(1227698);
+		mov.setDescricao("DescriÃ§Ã£o da movimentaÃ§Ã£o");
+		mov.setEnvolvido("Envolvido na movimentaÃ§Ã£o");
+		mov.setTipo("REC");
+		mov.setData_transacao("01/02/2010");
+		mov.setData_pagamento("01/01/2019");
+		mov.setValor(100f);
+		mov.setStatus(true);
+		return  mov;
 	}
 	
 
