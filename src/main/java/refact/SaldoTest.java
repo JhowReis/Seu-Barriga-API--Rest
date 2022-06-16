@@ -2,7 +2,6 @@ package refact;
 
 import core.BaseTest;
 import io.restassured.RestAssured;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -12,7 +11,7 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 
-public class ContasTest  extends BaseTest {
+public class SaldoTest extends BaseTest {
 
     private String TOKEN;
 
@@ -38,42 +37,17 @@ public class ContasTest  extends BaseTest {
         RestAssured.get("/reset").then().statusCode(200);
     }
     @Test
-    public void deveIncluirContaComSucesso() {
-                given()
-                    .body("{ \"nome\": \"Conta inserida\" }")
-                .when()
-                    .post("/contas")
-                .then()
-                    .statusCode(201)
-
-        ;
-    }
-    @Test
-    public void deveAlterarContaComSucesso() {
-        Integer CONTA_ID = getIdContaPeloNome("Conta para alterar");
+    public  void deveCalcularSaldoContas(){
+        Integer CONTA_ID =  getIdContaPeloNome("Conta para saldo");
         given()
-            .body("{\"nome\": \"Conta alterada\"}")
-            .pathParam("id", CONTA_ID)
-        .when()
-            .put("/contas/{id}")
-        .then()
-            .statusCode(200)
-            .body("nome", is("Conta alterada"))
-        ;
-    }
-
-
-    @Test
-    public void naoDeveIncluirContaComMesmoNome() {
-        given()
-                .body("{\"nome\": \"Conta mesmo nome\"}")
                 .when()
-                .post("/contas")
+                .get("/saldo")
                 .then()
-                .statusCode(400)
-                .body("error", is("Já existe uma conta com esse nome!"))
+                .statusCode(200)
+                .body("find{it.conta_id == " +CONTA_ID+ " }.saldo", is("534.00"))
 
         ;
+
     }
     public Integer getIdContaPeloNome(String nome){
         return RestAssured.get("/contas?nome="+nome).then().extract().path("id[0]");

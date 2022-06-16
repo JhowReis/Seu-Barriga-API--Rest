@@ -169,7 +169,8 @@ public class BarrigaTest extends BaseTest {
 
         ;
 
-    }  @Test
+    }
+	@Test
     public  void t09_deveRemoverMovimentacao(){
         given()
 			.pathParam("id", MOV_ID)
