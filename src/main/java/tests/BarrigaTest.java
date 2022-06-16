@@ -7,14 +7,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 
 import core.BaseTest;
+import org.junit.runners.MethodSorters;
+import utils.DateUtils;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BarrigaTest extends BaseTest {
 	
 	private String TOKEN;
-	
+
+    private static String CONTA_NAME = "conta" + System.nanoTime();
+	private  static Integer CONTA_ID;
+	private  static Integer MOV_ID;
+
 	@Before
 	public void login() {
 		Map<String, String> login = new HashMap<>();
@@ -34,7 +42,8 @@ public class BarrigaTest extends BaseTest {
 	}
 	
 	@Test
-	public void naoDeveAcessarAPISemToken() {
+	public void t00_naoDeveAcessarAPISemToken() {
+
 		given()
 		.when()
 			.get("/contas")
@@ -44,37 +53,40 @@ public class BarrigaTest extends BaseTest {
 	}
 	
 	@Test
-	public void deveIncluirContaComSucesso() {
+	public void t01_deveIncluirContaComSucesso() {
+		CONTA_ID =
 			given()
 				.header("Authorization","JWT " + TOKEN)
-				.body("{\"nome\": \"conta adicionada via api\"}")
+				.body("{\"nome\": \""+CONTA_NAME+"\"}")
 			.when()
 				.post("/contas")
 			.then()
 				.statusCode(201)
+				.extract().path("id")
 				
 		;
 	}
 	@Test
-	public void deveAlterarContaComSucesso() {
+	public void t02_deveAlterarContaComSucesso() {
 			given()
 				.header("Authorization","JWT " + TOKEN)
-				.body("{\"nome\": \"conta alterada via api\"}")
+				.body("{\"nome\": \""+CONTA_NAME+" alterada\"}")
+				.pathParam("id", CONTA_ID)
 			.when()
-				.put("/contas/1227698")
+				.put("/contas/{id}")
 			.then()
 				.statusCode(200)
-				.body("nome", is("conta alterada via api"))
+				.body("nome", is(CONTA_NAME+ " alterada"))
 				.body("usuario_id", is(21441))
 			
 			;
 	}
 	
 	@Test
-	public void naoDeveIncluirContaComMesmoNome() {
+	public void t03_naoDeveIncluirContaComMesmoNome() {
 		given()
 			.header("Authorization","JWT " + TOKEN)
-			.body("{\"nome\": \"conta alterada via api\"}")
+			.body("{\"nome\": \""+CONTA_NAME+" alterada\"}")
 		.when()
 			.post("/contas")
 		.then()
@@ -86,22 +98,23 @@ public class BarrigaTest extends BaseTest {
 	
 	
 	@Test
-	public void deveInserirMovimentacaoComSucesso() {
+	public void t04_deveInserirMovimentacaoComSucesso() {
 		Movimentacao mov = getMovimentacaoValida();
 		
-		given()
+		MOV_ID = given()
 			.header("Authorization","JWT " + TOKEN)
 			.body(mov)
 		.when()
 			.post("/transacoes")
 		.then()
 			.statusCode(201)
+			.extract().path("id")
 
 		;
 	}
 	
 	@Test
-	public void deveValidarCamposObrigatoriosNaMovimentacao() {
+	public void t05_deveValidarCamposObrigatoriosNaMovimentacao() {
 		given()
 			.header("Authorization","JWT " + TOKEN)
 			.body("{}")
@@ -126,9 +139,9 @@ public class BarrigaTest extends BaseTest {
 		;
 	}
 	@Test
-	public void naoDeveInserirMovimentacaoFutura() {
+	public void t06_naoDeveInserirMovimentacaoFutura() {
 		Movimentacao mov = getMovimentacaoValida();
-		mov.setData_transacao("17/06/2022");
+		mov.setData_transacao(DateUtils.getDataDiferencaDias(2));
 		given()
 			.header("Authorization","JWT " + TOKEN)
 			.body(mov)
@@ -144,11 +157,12 @@ public class BarrigaTest extends BaseTest {
 	}
 
     @Test
-    public  void naoDeveRemoverContaComMovimentacao(){
+    public  void t07_naoDeveRemoverContaComMovimentacao(){
         given()
             .header("Authorization","JWT " + TOKEN)
+			.pathParam("id", CONTA_ID)
         .when()
-            .delete("contas/1227698")
+            .delete("contas/{id}")
         .then()
             .statusCode(500)
             .body("constraint", is("transacoes_conta_id_foreign"))
@@ -158,23 +172,24 @@ public class BarrigaTest extends BaseTest {
     }
 
     @Test
-    public  void deveCalcularSaldoContas(){
+    public  void t08_deveCalcularSaldoContas(){
         given()
             .header("Authorization","JWT " + TOKEN)
         .when()
             .get("/saldo")
         .then()
             .statusCode(200)
-            .body("find{it.conta_id == 1227698}.saldo", is("300.00"))
+            .body("find{it.conta_id == " +CONTA_ID+ " }.saldo", is("100.00"))
 
         ;
 
     }  @Test
-    public  void deveRemoverMovimentacao(){
+    public  void t09_deveRemoverMovimentacao(){
         given()
             .header("Authorization","JWT " + TOKEN)
+			.pathParam("id", MOV_ID)
         .when()
-            .delete("/transacoes/1151122")
+            .delete("/transacoes/{id}")
         .then()
             .statusCode(204)
 
@@ -183,12 +198,12 @@ public class BarrigaTest extends BaseTest {
     }
     private Movimentacao getMovimentacaoValida(){
 		Movimentacao mov = new Movimentacao();
-		mov.setConta_id(1227698);
+		mov.setConta_id(CONTA_ID);
 		mov.setDescricao("Descrição da movimentação");
 		mov.setEnvolvido("Envolvido na movimentação");
 		mov.setTipo("REC");
-		mov.setData_transacao("01/02/2010");
-		mov.setData_pagamento("01/01/2019");
+		mov.setData_transacao(DateUtils.getDataDiferencaDias(-1));
+		mov.setData_pagamento(DateUtils.getDataDiferencaDias(5));
 		mov.setValor(100f);
 		mov.setStatus(true);
 		return  mov;
