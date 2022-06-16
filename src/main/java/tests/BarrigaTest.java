@@ -6,7 +6,10 @@ import static org.hamcrest.Matchers.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.restassured.RestAssured;
+import io.restassured.specification.FilterableRequestSpecification;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 
@@ -16,20 +19,19 @@ import utils.DateUtils;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class BarrigaTest extends BaseTest {
-	
-	private String TOKEN;
+
 
     private static String CONTA_NAME = "conta" + System.nanoTime();
 	private  static Integer CONTA_ID;
 	private  static Integer MOV_ID;
 
-	@Before
-	public void login() {
+	@BeforeClass
+	public static void login() {
 		Map<String, String> login = new HashMap<>();
 		login.put("email", "jonathan.linkedin2019@gmail.com");
 		login.put("senha", "jhowjhow2");
 		
-		TOKEN =
+		String TOKEN =
 				given()
 				
 				.body(login)
@@ -38,25 +40,16 @@ public class BarrigaTest extends BaseTest {
 				.then()
 				.statusCode(200)
 				.extract().path("token");
-		
+
+		RestAssured.requestSpecification.header("Authorization","JWT " + TOKEN );
 	}
 	
-	@Test
-	public void t00_naoDeveAcessarAPISemToken() {
 
-		given()
-		.when()
-			.get("/contas")
-		.then()
-			.statusCode(401)
-		;
-	}
 	
 	@Test
 	public void t01_deveIncluirContaComSucesso() {
 		CONTA_ID =
 			given()
-				.header("Authorization","JWT " + TOKEN)
 				.body("{\"nome\": \""+CONTA_NAME+"\"}")
 			.when()
 				.post("/contas")
@@ -69,7 +62,6 @@ public class BarrigaTest extends BaseTest {
 	@Test
 	public void t02_deveAlterarContaComSucesso() {
 			given()
-				.header("Authorization","JWT " + TOKEN)
 				.body("{\"nome\": \""+CONTA_NAME+" alterada\"}")
 				.pathParam("id", CONTA_ID)
 			.when()
@@ -85,7 +77,6 @@ public class BarrigaTest extends BaseTest {
 	@Test
 	public void t03_naoDeveIncluirContaComMesmoNome() {
 		given()
-			.header("Authorization","JWT " + TOKEN)
 			.body("{\"nome\": \""+CONTA_NAME+" alterada\"}")
 		.when()
 			.post("/contas")
@@ -102,7 +93,6 @@ public class BarrigaTest extends BaseTest {
 		Movimentacao mov = getMovimentacaoValida();
 		
 		MOV_ID = given()
-			.header("Authorization","JWT " + TOKEN)
 			.body(mov)
 		.when()
 			.post("/transacoes")
@@ -116,7 +106,6 @@ public class BarrigaTest extends BaseTest {
 	@Test
 	public void t05_deveValidarCamposObrigatoriosNaMovimentacao() {
 		given()
-			.header("Authorization","JWT " + TOKEN)
 			.body("{}")
 		.when()
 			.post("/transacoes")
@@ -143,7 +132,6 @@ public class BarrigaTest extends BaseTest {
 		Movimentacao mov = getMovimentacaoValida();
 		mov.setData_transacao(DateUtils.getDataDiferencaDias(2));
 		given()
-			.header("Authorization","JWT " + TOKEN)
 			.body(mov)
 		.when()
 			.post("/transacoes")
@@ -159,7 +147,6 @@ public class BarrigaTest extends BaseTest {
     @Test
     public  void t07_naoDeveRemoverContaComMovimentacao(){
         given()
-            .header("Authorization","JWT " + TOKEN)
 			.pathParam("id", CONTA_ID)
         .when()
             .delete("contas/{id}")
@@ -174,7 +161,6 @@ public class BarrigaTest extends BaseTest {
     @Test
     public  void t08_deveCalcularSaldoContas(){
         given()
-            .header("Authorization","JWT " + TOKEN)
         .when()
             .get("/saldo")
         .then()
@@ -186,7 +172,6 @@ public class BarrigaTest extends BaseTest {
     }  @Test
     public  void t09_deveRemoverMovimentacao(){
         given()
-            .header("Authorization","JWT " + TOKEN)
 			.pathParam("id", MOV_ID)
         .when()
             .delete("/transacoes/{id}")
@@ -196,6 +181,17 @@ public class BarrigaTest extends BaseTest {
         ;
 
     }
+	@Test
+	public void t10_naoDeveAcessarAPISemToken() {
+		FilterableRequestSpecification req = (FilterableRequestSpecification) RestAssured.requestSpecification;
+		req.removeHeader("Authorization");
+		given()
+				.when()
+				.get("/contas")
+				.then()
+				.statusCode(401)
+		;
+	}
     private Movimentacao getMovimentacaoValida(){
 		Movimentacao mov = new Movimentacao();
 		mov.setConta_id(CONTA_ID);
